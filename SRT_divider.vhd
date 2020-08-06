@@ -45,11 +45,6 @@ end SRT_divider;
 
 architecture Behavioral of SRT_divider is
 
---component Generic_normlization_unit is
---    generic (N: integer:= 8);
---    port (M: in std_logic_vector(N-1 downto 0);
---          norma_M: out std_logic_vector(N-1 downto 0));
---end component;
 component c_l_addr IS
     generic (N: integer:= 25);
     PORT
@@ -86,10 +81,12 @@ quotinet_addr: c_l_addr generic map(D_length)
                    port map (c_q, acc_q, '0', quo_sum, carry(1));         
                              
 xor_net_rmd <= (others=>add_sub_rmd);
---xor_net_quo <= (others=>add_sub_quo); 
                                              
 decision_bits <= c_shift_rmd(N-1)&c_shift_rmd(N-2);
-template_add_bit <= (D_length-2 =>'1', others=>'0');
+
+template_add_bit(D_length-1 downto D_length-2) <= "01";
+template_add_bit(D_length-3 downto 0) <= (others =>'0');
+
 template_sub_bit (D_length-1 downto D_length-2) <= "11";
 template_sub_bit (D_length-3 downto 0) <= (others =>'0');
 
@@ -102,7 +99,6 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
             if (rst = '1') then
                 c_state <= reset;
                 c_cnt <= (others=>'0');
-                --c_rmd <= (others=>'0');
                 c_q <= (others=>'0');
                 c_shift_rmd <= (others=>'0');
                 c_acc_q <= (others=>'0');
@@ -112,7 +108,6 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
                 c_q <= n_q;
                 c_shift_rmd <= n_shift_rmd;
                 c_cnt <= n_cnt;
-                --c_acc_q <= n_acc_q;
             end if;
         end if;
     end process;
@@ -159,7 +154,6 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
                 --11=> c_rmd >-0.5
                  if (decision_bits = "00") then
                     --when "00"=>
-                    --should not enter here due to normalization of the reminder.
                     n_rmd <= c_shift_rmd;
                     n_shift_rmd <= std_logic_vector(shift_left(unsigned(c_shift_rmd), 1));
                     n_q <= quo_sum;
