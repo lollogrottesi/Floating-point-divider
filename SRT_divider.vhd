@@ -38,7 +38,8 @@ entity SRT_divider is
           divider:  in std_logic_vector(D_length-1 downto 0);
           clk, rst: in std_logic;
           soa:      in std_logic;
-          eoa:      out std_logic;
+          busy:     out std_logic;
+          eoa:      out std_logic; 
           quotient: out std_logic_vector(D_length-1 downto 0);
           reminder: out std_logic_vector(D_length-1 downto 0));
 end SRT_divider;
@@ -57,13 +58,13 @@ component c_l_addr IS
         );
 END component;
 
-type statetype is (reset, idle, compute, final_state);
+type statetype is (reset, idle, compute, check_sign ,final_state);
 signal c_state, n_state: statetype;
 signal c_rmd, n_rmd: std_logic_vector(N-1 downto 0);
 signal c_q, n_q, c_cnt, n_cnt: std_logic_vector(D_length-1 downto 0);
 signal c_shift_rmd, n_shift_rmd, n_norma_shift_rmd: std_logic_vector(N-1 downto 0);
 signal decision_bits: std_logic_vector(1 downto 0);
-signal c_acc_q, n_acc_q, acc_q: std_logic_vector(D_length-1 downto 0);
+signal acc_q: std_logic_vector(D_length-1 downto 0);
 signal template_add_bit, template_sub_bit: std_logic_vector(D_length-1 downto 0);
 signal add_sub_rmd, add_sub_quo: std_logic;
 signal xor_net_rmd: std_logic_vector(N-1 downto 0);
@@ -101,7 +102,6 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
                 c_cnt <= (others=>'0');
                 c_q <= (others=>'0');
                 c_shift_rmd <= (others=>'0');
-                c_acc_q <= (others=>'0');
             else
                 c_state <= n_state;
                 c_rmd <= n_rmd;
@@ -117,15 +117,15 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
         case c_state is
             when reset=>
                 eoa <= '0';
+                busy <= '0';
                 n_state <= idle;
                 n_q <= c_q;
                 n_rmd <= c_rmd;
                 n_cnt <= c_cnt;
                 n_shift_rmd <= c_shift_rmd;
-                n_acc_q <= c_acc_q;
             when idle=>
                 eoa <= '0';
-                n_acc_q <= c_acc_q;
+                busy <= '0';
                 n_q <= (others=>'0');
                 n_cnt <= (others=>'0');
                 if (soa = '1') then
@@ -133,11 +133,13 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
                     n_shift_rmd <= std_logic_vector(shift_left(unsigned(dividend), 1));
                     n_state <= compute;
                 else
-                    n_shift_rmd <= c_shift_rmd;
+                    n_rmd <= (others=>'0');
+                    n_shift_rmd <= (others=>'0');
                     n_state <= idle;
                 end if;     
             when compute=>
                 eoa <= '0';
+                busy <= '1';
                 if (unsigned (c_cnt) < D_length-2) then
                     n_cnt <= std_logic_vector(unsigned(c_cnt) + 1);
                     n_state <= compute;
@@ -177,10 +179,9 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
                     --when "11"=>
                     n_rmd <= c_shift_rmd;
                     n_shift_rmd <= std_logic_vector(shift_left(unsigned(c_shift_rmd), 1));
-                    n_acc_q <= (others => '0');
                   end if;
                 
-            when final_state=>
+            when check_sign=>
                if (c_rmd(N-1) = '1') then
                     n_rmd(N-1 downto N-D_length) <= std_logic_vector(unsigned(c_rmd(N-1 downto N-D_length)) + unsigned(sum_divider(N-1 downto N-D_length)));
                     n_q <= std_logic_vector(unsigned(c_q) - 1);
@@ -189,13 +190,19 @@ sum_divider_addr_in <=  sum_divider xor xor_net_rmd;
                     n_q <= c_q;
                end if;
                
-               eoa <= '1';
-               n_state <= idle;
+               eoa <= '0';
+               busy <= '1';
+               n_state <= final_state;
                n_cnt <= (others=>'0');
                n_shift_rmd <= (others=>'0');
-               n_acc_q <= (others=>'0');
+            when final_state=>  
+               eoa <= '1';
+               busy <= '1';
+               n_state <= idle;
+               n_cnt <= (others=>'0');
+               n_shift_rmd <= (others=>'0');          
         end case;
-        
+            
     end process;
 quotient <= c_q;
 reminder <= c_rmd(N-1 downto N-D_length);

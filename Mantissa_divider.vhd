@@ -40,6 +40,7 @@ entity Mantissa_divider is
           clk: in std_logic;
           rst: in std_logic;
           M_out: out std_logic_vector(24 downto 0);
+          busy: out std_logic;
           eoa: out std_logic);
 end Mantissa_divider;
 
@@ -51,7 +52,8 @@ component SRT_divider is
           divider:  in std_logic_vector(D_length-1 downto 0);
           clk, rst: in std_logic;
           soa:      in std_logic;
-          eoa:      out std_logic;
+          busy:     out std_logic;
+          eoa:      out std_logic; 
           quotient: out std_logic_vector(D_length-1 downto 0);
           reminder: out std_logic_vector(D_length-1 downto 0));
 end component;
@@ -59,6 +61,6 @@ end component;
 signal rmd: std_logic_vector(24 downto 0);
 begin
 divider_unit: SRT_divider generic map (26, 25)
-                          port map(M_a, M_b, clk, rst, soa, eoa, M_out, rmd);
+                          port map(M_a, M_b, clk, rst, soa, busy, eoa, M_out, rmd);
 
 end Behavioral;

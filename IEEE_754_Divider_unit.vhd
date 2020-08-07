@@ -37,6 +37,7 @@ entity IEEE_754_Divider_unit is
           clk : in std_logic;
           rst : in std_logic;
           soa : in std_logic;
+          busy: out std_logic;
           eoa : out std_logic;
           error: out std_logic;
           FP_z: out std_logic_vector(31 downto 0));
@@ -52,6 +53,7 @@ component Mantissa_divider is
           clk: in std_logic;
           rst: in std_logic;
           M_out: out std_logic_vector(24 downto 0);
+          busy: out std_logic;
           eoa: out std_logic);
 end component;
 
@@ -85,7 +87,7 @@ pre_division_M_b(24) <= '0';
 pre_division_M_b(22 downto 0) <= FP_b(22 downto 0);
 pre_division_M_b(23) <= '0' when FP_b(30 downto 23) = "00000000" else 
                         '1';
-Mantissa_divider_unit: Mantissa_divider port map (pre_division_M_a, pre_division_M_b, soa, clk, rst, post_division_M, eoa);
+Mantissa_divider_unit: Mantissa_divider port map (pre_division_M_a, pre_division_M_b, soa, clk, rst, post_division_M, busy, eoa);
 
 exponent_subctractor_unit: Exponent_subctrator port map (FP_a(30 downto 23), FP_b(30 downto 23), post_sub_E);
 
